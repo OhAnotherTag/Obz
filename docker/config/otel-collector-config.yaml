@@ -1,0 +1,50 @@
+﻿receivers:
+  otlp:
+    protocols:
+      grpc:
+
+exporters:
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+    namespace: promexample
+    const_labels:
+      label1: value1
+      
+  logging:
+    loglevel: debug
+
+  otlp:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+
+connectors:
+  spanmetrics:
+    dimensions:
+      - name: http.method
+        default: GET
+      - name: http.status_code
+    exemplars:
+      enabled: true
+
+processors:
+  batch:
+
+extensions:
+  health_check:
+  pprof:
+    endpoint: :1888
+  zpages:
+    endpoint: :55679
+
+service:
+  extensions: [pprof, zpages, health_check]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [logging, otlp]
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [logging, prometheus]
